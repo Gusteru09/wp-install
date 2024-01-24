@@ -11,11 +11,13 @@ echo
 read -p "Introduceți numele de utilizator pentru admin WordPress: " wp_user
 read -s -p "Introduceți parola pentru admin WordPress: " wp_pass
 read -p "Introduceți email-ul pentru admin WordPress: " wp_email
+read -p "Introduceți titlul site-ului WordPress: " wp_title
+read -p "Introduceți descrierea site-ului WordPress: " wp_description
 echo
 
 # Actualizare și instalare dependențe
-sudo apt-get update
-sudo apt-get upgrade
+sudo apt-get update -y
+sudo apt-get upgrade -y
 sudo apt-get install -y apache2 mysql-server php8.1 php8.1-mysql php8.1-xml php8.1-curl php8.1-gd php8.1-mbstring php8.1-imagick redis-server php-redis
 
 # Configurare MySQL
@@ -38,22 +40,28 @@ sed -i "s/database_name_here/$db_name/" /var/www/html/$domain_name/public_html/w
 sed -i "s/username_here/$db_user/" /var/www/html/$domain_name/public_html/wp-config.php
 sed -i "s/password_here/$db_pass/" /var/www/html/$domain_name/public_html/wp-config.php
 
-# Configurare automată a WordPress (creare utilizator admin)
+# Configurare automată a WordPress (creare utilizator admin și setări site)
 cat << EOF | sudo tee /var/www/html/$domain_name/public_html/wp-config-auto.php
 <?php
 require_once('/var/www/html/$domain_name/public_html/wp-load.php');
 require_once('/var/www/html/$domain_name/public_html/wp-admin/includes/admin.php');
 require_once('/var/www/html/$domain_name/public_html/wp-includes/pluggable.php');
 
-\$user = '$wp_user';
-\$pass = '$wp_pass';
-\$email = '$wp_email';
-
-if (!username_exists(\$user) && !email_exists(\$email)) {
-    \$user_id = wp_create_user(\$user, \$pass, \$email);
+// Creează utilizatorul admin dacă nu există
+if (!username_exists('$wp_user') && !email_exists('$wp_email')) {
+    \$user_id = wp_create_user('$wp_user', '$wp_pass', '$wp_email');
     \$user = new WP_User(\$user_id);
     \$user->set_role('administrator');
 }
+
+// Setări site
+update_option('blogname', '$wp_title');
+update_option('blogdescription', '$wp_description');
+update_option('admin_email', '$wp_email');
+
+// Dezactivează solicitarea de configurare la prima autentificare
+update_option('show_on_front', 'posts');
+?>
 EOF
 sudo php /var/www/html/$domain_name/public_html/wp-config-auto.php
 
@@ -73,4 +81,4 @@ EOF
 sudo a2ensite $domain_name.conf
 sudo systemctl restart apache2
 
-echo "Instalarea WordPress pe $domain_name s-a finalizat. Accesați http://$domain_name pentru a continua configurarea."
+echo "Instalarea WordPress pe $domain_name s-a finalizat. Accesați http://$
