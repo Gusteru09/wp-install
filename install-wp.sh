@@ -63,7 +63,8 @@ update_option('admin_email', '$wp_email');
 update_option('show_on_front', 'posts');
 ?>
 EOF
-sudo php /var/www/html/$domain_name/public_html/wp-config-auto.php
+sudo chown www-data:www-data /var/www/html/$domain_name/public_html/wp-config.php
+sudo chown www-data:www-data /var/www/html/$domain_name/public_html/wp-config-auto.php
 
 # Configurare Apache Virtual Host
 sudo touch /etc/apache2/sites-available/$domain_name.conf
@@ -79,6 +80,3 @@ cat <<EOF | sudo tee /etc/apache2/sites-available/$domain_name.conf
 EOF
 
 sudo a2ensite $domain_name.conf
-sudo systemctl restart apache2
-
-echo "Instalarea WordPress pe $domain_name s-a finalizat. Accesați http://$
