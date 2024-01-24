@@ -8,6 +8,10 @@ read -p "Introduceți numele bazei de date: " db_name
 read -p "Introduceți numele de utilizator MySQL: " db_user
 read -s -p "Introduceți parola pentru MySQL: " db_pass
 echo
+read -p "Introduceți numele de utilizator pentru admin WordPress: " wp_user
+read -s -p "Introduceți parola pentru admin WordPress: " wp_pass
+read -p "Introduceți email-ul pentru admin WordPress: " wp_email
+echo
 
 # Actualizare și instalare dependențe
 sudo apt-get update
@@ -33,6 +37,25 @@ cp /var/www/html/$domain_name/public_html/wp-config-sample.php /var/www/html/$do
 sed -i "s/database_name_here/$db_name/" /var/www/html/$domain_name/public_html/wp-config.php
 sed -i "s/username_here/$db_user/" /var/www/html/$domain_name/public_html/wp-config.php
 sed -i "s/password_here/$db_pass/" /var/www/html/$domain_name/public_html/wp-config.php
+
+# Configurare automată a WordPress (creare utilizator admin)
+cat << EOF | sudo tee /var/www/html/$domain_name/public_html/wp-config-auto.php
+<?php
+require_once('/var/www/html/$domain_name/public_html/wp-load.php');
+require_once('/var/www/html/$domain_name/public_html/wp-admin/includes/admin.php');
+require_once('/var/www/html/$domain_name/public_html/wp-includes/pluggable.php');
+
+\$user = '$wp_user';
+\$pass = '$wp_pass';
+\$email = '$wp_email';
+
+if (!username_exists(\$user) && !email_exists(\$email)) {
+    \$user_id = wp_create_user(\$user, \$pass, \$email);
+    \$user = new WP_User(\$user_id);
+    \$user->set_role('administrator');
+}
+EOF
+sudo php /var/www/html/$domain_name/public_html/wp-config-auto.php
 
 # Configurare Apache Virtual Host
 sudo touch /etc/apache2/sites-available/$domain_name.conf
